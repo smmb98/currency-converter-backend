@@ -1,34 +1,31 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { Controller, Get, Query, UsePipes, ValidationPipe } from '@nestjs/common';
 import { ApiTags, ApiQuery, ApiOperation } from '@nestjs/swagger';
 import { CurrencyService } from './currency.service';
+import { LatestDto } from './dto/latest.dto/latest.dto';
+import { HistoricalDto } from './dto/historical.dto/historical.dto';
+import { CurrenciesDto } from './dto/currencies.dto/currencies.dto';
 
 @ApiTags('currency')
 @Controller('currency')
+@UsePipes(new ValidationPipe({ transform: true }))
 export class CurrencyController {
   constructor(private readonly service: CurrencyService) {}
 
   @Get('latest')
   @ApiOperation({ summary: 'Get latest exchange rates' })
-  @ApiQuery({
-    name: 'base',
-    required: true,
-    description: 'Base currency code (e.g., USD)',
-  })
-  getLatest(@Query('base') base: string) {
-    return this.service.getLatest(base);
+  getLatest(@Query() dto: LatestDto) {
+    return this.service.getLatest(dto.base);
   }
 
   @Get('historical')
   @ApiOperation({ summary: 'Get historical exchange rates' })
-  @ApiQuery({ name: 'base', required: true, description: 'Base currency code' })
-  @ApiQuery({ name: 'date', required: true, description: 'Date (YYYY-MM-DD)' })
-  getHistorical(@Query('base') base: string, @Query('date') date: string) {
-    return this.service.getHistorical(base, date);
+  getHistorical(@Query() dto: HistoricalDto) {
+    return this.service.getHistorical(dto.base, dto.date);
   }
 
   @Get('currencies')
   @ApiOperation({ summary: 'Get available currencies' })
-  getCurrencies() {
+  getCurrencies(@Query() dto: CurrenciesDto) {
     return this.service.getCurrencies();
   }
 }

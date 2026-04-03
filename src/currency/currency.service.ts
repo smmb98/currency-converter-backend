@@ -1,29 +1,24 @@
-import { HttpService } from '@nestjs/axios';
-import { Injectable } from '@nestjs/common';
-import { firstValueFrom } from 'rxjs';
+import { Injectable, OnModuleInit } from '@nestjs/common';
+import FreeCurrencyAPI from '@everapi/freecurrencyapi-js';
 
 @Injectable()
-export class CurrencyService {
-  private readonly API_KEY = 'YOUR_API_KEY';
-  private readonly BASE_URL = 'https://api.freecurrencyapi.com/v1';
+export class CurrencyService implements OnModuleInit {
+  private readonly API_KEY = '4E0VK7BnkdeUuh1vegAt808v2IUjzUR6lxcvBMT2';
+  private client: FreeCurrencyAPI;
 
-  constructor(private readonly http: HttpService) {}
+  onModuleInit() {
+    this.client = new FreeCurrencyAPI(this.API_KEY);
+  }
 
   async getLatest(base: string) {
-    const url = `${this.BASE_URL}/latest?apikey=${this.API_KEY}&base_currency=${base}`;
-    const res = await firstValueFrom(this.http.get(url));
-    return res.data;
+    return this.client.latest({ base_currency: base });
   }
 
   async getHistorical(base: string, date: string) {
-    const url = `${this.BASE_URL}/historical?apikey=${this.API_KEY}&base_currency=${base}&date=${date}`;
-    const res = await firstValueFrom(this.http.get(url));
-    return res.data;
+    return this.client.historical({ base_currency: base, date });
   }
 
   async getCurrencies() {
-    const url = `${this.BASE_URL}/currencies?apikey=${this.API_KEY}`;
-    const res = await firstValueFrom(this.http.get(url));
-    return res.data;
+    return this.client.currencies();
   }
 }

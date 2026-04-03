@@ -4,10 +4,6 @@
   "testEnvironment": "node",
   "testRegex": ".e2e-spec.ts$",
   "transform": {
-    "^.+\\.(t|j)s$": ["ts-jest", { " isolatedModules": true }],
-    "^.+\.js$": ["babel-jest", { "presets": [["@babel/preset-env", { "targets": { "node": "current" } }]] }]
-  },
-  "transformIgnorePatterns": [
-    "node_modules/(?!(@nestjs|@everapi|rxjs|axios)/)"
-  ]
+    "^.+\\.(t|j)s$": ["ts-jest", { "tsconfig": "./tsconfig.json" }]
+  }
 }

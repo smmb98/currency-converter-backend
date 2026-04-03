@@ -10,7 +10,7 @@ async function bootstrap(): Promise<void> {
   app.enableCors({
     origin: [
       'http://localhost:4200',
-      'https://shimmering-sopapillas-79b0b5.netlify.app/',
+      'https://shimmering-sopapillas-79b0b5.netlify.app',
     ],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,

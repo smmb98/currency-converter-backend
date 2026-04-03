@@ -8,7 +8,10 @@ async function bootstrap(): Promise<void> {
   app.useGlobalFilters(new HttpExceptionFilter());
 
   app.enableCors({
-    origin: '*',
+    origin: [
+      'http://localhost:4200',
+      'https://currency-converter-backend-production-70b8.up.railway.app',
+    ],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,
   });

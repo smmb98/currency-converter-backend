@@ -1,9 +1,12 @@
 import { NestFactory } from '@nestjs/core';
-import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
+import { HttpExceptionFilter } from './common/http-exception.filter';
 
-async function bootstrap() {
+async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);
+
+  app.useGlobalFilters(new HttpExceptionFilter());
 
   app.enableCors({
     origin: '*',
@@ -13,18 +16,14 @@ async function bootstrap() {
 
   const config = new DocumentBuilder()
     .setTitle('Currency Converter API')
-    .setDescription('API for currency conversion')
+    .setDescription('Proxy API for FreeCurrencyAPI')
     .setVersion('1.0')
     .build();
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api', app, document);
+  SwaggerModule.setup('api', app, SwaggerModule.createDocument(app, config));
 
   await app.listen(process.env.PORT ?? 3000);
   const url = await app.getUrl();
-  console.log(`
-  Application running at: ${url}
-  Swagger UI: ${url}/api
-  Swagger JSON: ${url}/api-json
-  `);
+  console.log(`Application: ${url}  |  Swagger: ${url}/api`);
 }
+
 bootstrap();

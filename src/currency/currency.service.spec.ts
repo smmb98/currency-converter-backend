@@ -1,79 +1,85 @@
+import { HttpException } from '@nestjs/common';
+import { HttpService } from '@nestjs/axios';
+import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
+import { of, throwError } from 'rxjs';
 import { CurrencyService } from './currency.service';
-import axios from 'axios';
 
-describe('CurrencyService - Live API Tests', () => {
+const mockHttpService = {
+  get: jest.fn(),
+};
+
+const mockConfigService = {
+  get: jest.fn().mockReturnValue('test-key'),
+};
+
+describe('CurrencyService', () => {
   let service: CurrencyService;
-  const API_KEY = '4E0VK7BnkdeUuh1vegAt808v2IUjzUR6lxcvBMT2';
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [CurrencyService],
-    }).compile();
+      providers: [
+        CurrencyService,
+        { provide: HttpService, useValue: mockHttpService },
+        { provide: ConfigService, useValue: mockConfigService },
+      ],
+    })
+      .setLogger({ log: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn(), verbose: jest.fn() })
+      .compile();
 
     service = module.get<CurrencyService>(CurrencyService);
-    await service.onModuleInit();
   });
+
+  afterEach(() => jest.clearAllMocks());
 
   it('should be defined', () => {
     expect(service).toBeDefined();
   });
 
-  describe('getLatest - Live API', () => {
-    it('should return latest exchange rates for USD', async () => {
+  describe('getLatest', () => {
+    it('returns data from API', async () => {
+      mockHttpService.get.mockReturnValue(of({ data: { data: { PKR: 280 } } }));
       const result = await service.getLatest('USD');
-      expect(result).toBeDefined();
-      expect(result.data).toBeDefined();
+      expect(result).toEqual({ data: { PKR: 280 } });
+      expect(mockHttpService.get).toHaveBeenCalledWith(
+        expect.stringContaining('/latest'),
+        expect.objectContaining({ params: expect.objectContaining({ base_currency: 'USD' }) }),
+      );
+    });
+
+    it('throws HttpException on API failure', async () => {
+      mockHttpService.get.mockReturnValue(throwError(() => new Error('network error')));
+      await expect(service.getLatest('USD')).rejects.toThrow(HttpException);
     });
   });
 
-  describe('Live Conversion Tests', () => {
-    it('should convert USD to PKR with valid rate', async () => {
-      const result = await service.getLatest('USD');
-      const rate = result.data.PKR;
-      expect(rate).toBeGreaterThan(200);
+  describe('getHistorical', () => {
+    it('returns historical data from API', async () => {
+      mockHttpService.get.mockReturnValue(of({ data: { data: { PKR: 275 } } }));
+      const result = await service.getHistorical('USD', '2024-01-01');
+      expect(result).toEqual({ data: { PKR: 275 } });
+      expect(mockHttpService.get).toHaveBeenCalledWith(
+        expect.stringContaining('/historical'),
+        expect.objectContaining({ params: expect.objectContaining({ date: '2024-01-01' }) }),
+      );
     });
 
-    it('should convert 100 USD to ~27,000+ PKR', async () => {
-      const result = await service.getLatest('USD');
-      const converted = 100 * result.data.PKR;
-      expect(converted).toBeGreaterThan(20000);
-    });
-
-    it('should return all major currencies', async () => {
-      const result = await service.getLatest('USD');
-      expect(result.data.USD).toBe(1);
-      expect(result.data.EUR).toBeDefined();
-      expect(result.data.GBP).toBeDefined();
+    it('throws HttpException on API failure', async () => {
+      mockHttpService.get.mockReturnValue(throwError(() => new Error('network error')));
+      await expect(service.getHistorical('USD', '2024-01-01')).rejects.toThrow(HttpException);
     });
   });
 
-  describe('getCurrencies - Live API', () => {
-    it('should return a list of currencies', async () => {
+  describe('getCurrencies', () => {
+    it('returns currencies from API', async () => {
+      mockHttpService.get.mockReturnValue(of({ data: { data: { USD: {}, EUR: {} } } }));
       const result = await service.getCurrencies();
-      expect(result).toBeDefined();
-      expect(Object.keys(result.data).length).toBeGreaterThan(100);
+      expect(result).toEqual({ data: { USD: {}, EUR: {} } });
     });
-  });
-});
 
-describe('FreeCurrencyAPI Direct HTTP Tests', () => {
-  const BASE_URL = 'https://api.freecurrencyapi.com/v1';
-  const API_KEY = '4E0VK7BnkdeUuh1vegAt808v2IUjzUR6lxcvBMT2';
-
-  it('should fetch latest USD rates via HTTP', async () => {
-    const res = await axios.get(`${BASE_URL}/latest`, {
-      params: { apikey: API_KEY, base_currency: 'USD' }
+    it('throws HttpException on API failure', async () => {
+      mockHttpService.get.mockReturnValue(throwError(() => new Error('network error')));
+      await expect(service.getCurrencies()).rejects.toThrow(HttpException);
     });
-    expect(res.data.data.PKR).toBeGreaterThan(200);
-  });
-
-  it('should convert 50 USD to EUR correctly', async () => {
-    const res = await axios.get(`${BASE_URL}/latest`, {
-      params: { apikey: API_KEY, base_currency: 'USD' }
-    });
-    const rate = res.data.data.EUR;
-    const converted = 50 * rate;
-    expect(converted).toBeGreaterThan(40);
   });
 });
